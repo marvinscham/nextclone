@@ -1,0 +1,3 @@
+#!/bin/sh
+export NEXTCLONE_RCLONE_PATH="${NEXTCLONE_RCLONE_PATH:-/usr/lib/nextclone/rclone}"
+exec /usr/lib/nextclone/nextclone "$@"

@@ -1,0 +1,149 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  GO_VERSION: "1.23"
+  RCLONE_VERSION: "v1.68.2"
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux GUI dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gcc libgl1-mesa-dev xorg-dev libxkbcommon-dev
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up MinGW
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-gcc
+
+      - name: Test
+        run: go test ./...
+
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-22.04
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gcc libgl1-mesa-dev xorg-dev libxkbcommon-dev zip unzip curl dpkg-dev
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build Nextclone
+        run: |
+          mkdir -p dist rclone-linux
+          go build -trimpath -ldflags "-s -w" -o dist/nextclone-linux-amd64 ./cmd/nextclone
+
+      - name: Bundle rclone
+        run: |
+          curl -L "https://downloads.rclone.org/${RCLONE_VERSION}/rclone-${RCLONE_VERSION}-linux-amd64.zip" -o /tmp/rclone-linux.zip
+          unzip -q /tmp/rclone-linux.zip -d rclone-linux
+          cp rclone-linux/rclone-*-linux-amd64/rclone dist/rclone-linux-amd64
+          chmod +x dist/nextclone-linux-amd64 dist/rclone-linux-amd64 packaging/linux/nextclone scripts/package-deb.sh
+
+      - name: Package .deb
+        run: sh scripts/package-deb.sh "${GITHUB_REF_NAME#v}"
+
+      - name: Package Linux zip
+        run: zip -j "dist/nextclone_${GITHUB_REF_NAME}_linux_amd64.zip" dist/nextclone-linux-amd64 dist/rclone-linux-amd64
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-artifacts
+          path: |
+            dist/nextclone-linux-amd64
+            dist/rclone-linux-amd64
+            dist/nextclone_*_linux_amd64.deb
+            dist/nextclone_*_linux_amd64.zip
+
+  build-windows:
+    name: Build Windows
+    runs-on: windows-2022
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build Nextclone
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist, rclone-windows | Out-Null
+          $env:Path = "C:\msys64\mingw64\bin;$env:Path"
+          $env:CGO_ENABLED = "1"
+          $env:CC = "gcc"
+          go build -trimpath -ldflags "-s -w -H windowsgui" -o dist/nextclone-windows-amd64.exe ./cmd/nextclone
+
+      - name: Bundle rclone
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://downloads.rclone.org/${env:RCLONE_VERSION}/rclone-${env:RCLONE_VERSION}-windows-amd64.zip" -OutFile "$env:TEMP\rclone-windows.zip"
+          Expand-Archive -Path "$env:TEMP\rclone-windows.zip" -DestinationPath rclone-windows -Force
+          Copy-Item "rclone-windows\rclone-*-windows-amd64\rclone.exe" dist\rclone.exe
+
+      - name: Package Windows zip
+        shell: pwsh
+        run: Compress-Archive -Path dist\nextclone-windows-amd64.exe, dist\rclone.exe -DestinationPath "dist\nextclone_${env:GITHUB_REF_NAME}_windows_amd64.zip" -Force
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: |
+            dist/nextclone-windows-amd64.exe
+            dist/rclone.exe
+            dist/nextclone_*_windows_amd64.zip
+
+  release:
+    name: Publish Release
+    runs-on: ubuntu-22.04
+    needs:
+      - build-linux
+      - build-windows
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Nextclone ${{ github.ref_name }}
+          body: Automated Nextclone release for ${{ github.ref_name }}. Includes bundled rclone builds for Linux and Windows.
+          files: release-assets/*

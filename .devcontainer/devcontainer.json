@@ -1,0 +1,23 @@
+{
+  "name": "Nextclone",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "containerUser": "root",
+  "remoteUser": "root",
+  "workspaceFolder": "/workspaces/nextclone",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/nextclone,type=bind,consistency=cached",
+  "remoteEnv": {
+    "DISPLAY": "${localEnv:DISPLAY}"
+  },
+  "mounts": [
+    "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.Go"
+      ]
+    }
+  }
+}
