@@ -69,14 +69,13 @@ Release packages bundle rclone where possible.
 
 ## Release
 
-Push a Git tag to GitHub:
+Merges to `main` are versioned automatically from Conventional Commit messages since the latest `v*` tag:
 
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
+- `feat:` bumps the minor version
+- `fix:`, `perf:`, and `revert:` bump the patch version
+- `!` in the commit header or `BREAKING CHANGE:` in the body bumps the major version
 
-The GitHub Actions pipeline builds tagged Linux and Windows artifacts, creates a Debian package, and publishes a GitHub Release.
+The version workflow updates `VERSION`, commits `chore(release): v{new_version}`, and tags that bump commit as `v{new_version}`. The tag release pipeline builds Linux and Windows artifacts, creates a Debian package, and publishes a GitHub Release.
 
 ## Icon credit
 
