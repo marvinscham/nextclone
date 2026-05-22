@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -15,7 +14,9 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/marvinscham/nextclone/internal/autostart"
 	"github.com/marvinscham/nextclone/internal/config"
+	"github.com/marvinscham/nextclone/internal/jobs"
 	"github.com/marvinscham/nextclone/internal/rclone"
 )
 
@@ -90,7 +91,7 @@ func (s *state) refreshJobs() {
 		if job.Mode == "sync" {
 			mode = "Sync (destination may be deleted to match source)"
 		}
-		meta := widget.NewLabel(fmt.Sprintf("Mode: %s | Status: %s", mode, status))
+		meta := widget.NewLabel(fmt.Sprintf("Mode: %s | Schedule: %s | Status: %s", mode, scheduleStatus(job), status))
 
 		start := widget.NewButtonWithIcon("Start", theme.MediaPlayIcon(), func() { s.startJob(idx) })
 		if _, running := s.cancel[job.ID]; running {
@@ -154,6 +155,14 @@ func (s *state) showJobDialog(index *int) {
 	mode.SetSelected(job.Mode)
 	dryRun := widget.NewCheck("Dry run only", nil)
 	dryRun.SetChecked(job.DryRun)
+	scheduleEnabled := widget.NewCheck("Run automatically", nil)
+	scheduleEnabled.SetChecked(job.Schedule.Enabled)
+	every := widget.NewSelect(scheduleOptions(), nil)
+	every.SetSelected(scheduleLabel(job.Schedule.EveryNDays))
+	hour := widget.NewSelect(numberOptions(0, 23), nil)
+	hour.SetSelected(fmt.Sprintf("%02d", normalizedHour(job.Schedule.AtHour)))
+	minute := widget.NewSelect(numberOptions(0, 59), nil)
+	minute.SetSelected(fmt.Sprintf("%02d", normalizedMinute(job.Schedule.AtMinute)))
 	excludes := widget.NewMultiLineEntry()
 	excludes.SetMinRowsVisible(4)
 	excludes.SetText(strings.Join(job.Excludes, "\n"))
@@ -180,6 +189,9 @@ func (s *state) showJobDialog(index *int) {
 		widget.NewFormItem("Remote path", remotePath),
 		widget.NewFormItem("Mode", mode),
 		widget.NewFormItem("Options", dryRun),
+		widget.NewFormItem("Schedule", scheduleEnabled),
+		widget.NewFormItem("Every", every),
+		widget.NewFormItem("At", container.NewHBox(hour, widget.NewLabel(":"), minute)),
 		widget.NewFormItem("Exclude patterns", excludes),
 		widget.NewFormItem("Extra flags", extra),
 	}, func(save bool) {
@@ -199,6 +211,10 @@ func (s *state) showJobDialog(index *int) {
 			job.Mode = "copy"
 		}
 		job.DryRun = dryRun.Checked
+		job.Schedule.Enabled = scheduleEnabled.Checked
+		job.Schedule.EveryNDays = scheduleDays(every.Selected)
+		_, _ = fmt.Sscanf(hour.Selected, "%d", &job.Schedule.AtHour)
+		_, _ = fmt.Sscanf(minute.Selected, "%d", &job.Schedule.AtMinute)
 		job.Excludes = splitLines(excludes.Text)
 		job.ExtraFlags = strings.TrimSpace(extra.Text)
 		job.UpdatedAt = time.Now()
@@ -218,19 +234,18 @@ func (s *state) startJob(index int) {
 	if _, running := s.cancel[job.ID]; running {
 		return
 	}
-	logDir, err := config.LogDir()
+	ctx, cancel := context.WithCancel(context.Background())
+	events, done, err := jobs.Start(ctx, s.cfg, s.runner, job, false)
 	if err != nil {
+		cancel()
 		dialog.ShowError(err, s.window)
 		return
 	}
-	ctx, cancel := context.WithCancel(context.Background())
 	s.cancel[job.ID] = cancel
 	s.status[job.ID] = "Running"
 	s.liveLogs[job.ID] = nil
 	s.refreshJobs()
 
-	logPath := filepath.Join(logDir, fmt.Sprintf("%s-%s.log", safeName(job.Name), time.Now().Format("20060102-150405")))
-	events, done := s.runner.RunJob(ctx, job, logPath)
 	go func() {
 		for event := range events {
 			s.liveLogs[job.ID] = append(s.liveLogs[job.ID], event.Line)
@@ -239,19 +254,11 @@ func (s *state) startJob(index int) {
 	go func() {
 		result := <-done
 		delete(s.cancel, job.ID)
-		job.LastRun = &result
-		for i := range s.cfg.Jobs {
-			if s.cfg.Jobs[i].ID == job.ID {
-				s.cfg.Jobs[i].LastRun = &result
-				break
-			}
-		}
 		if result.Success {
 			s.status[job.ID] = "Completed successfully"
 		} else {
 			s.status[job.ID] = "Failed: " + result.Message
 		}
-		_ = config.Save(s.cfg)
 		s.refreshJobs()
 	}()
 }
@@ -284,6 +291,7 @@ func (s *state) duplicateJob(index int) {
 	job.ID = newID()
 	job.Name += " copy"
 	job.LastRun = nil
+	job.LastScheduledRun = nil
 	job.CreatedAt = time.Now()
 	job.UpdatedAt = job.CreatedAt
 	s.cfg.Jobs = append(s.cfg.Jobs, job)
@@ -350,10 +358,13 @@ func (s *state) showSettingsDialog() {
 	rclonePath.SetText(s.cfg.Settings.RclonePath)
 	retention := widget.NewEntry()
 	retention.SetText(fmt.Sprintf("%d", s.cfg.Settings.LogRetentionDays))
+	autoStart := widget.NewCheck("Start Nextclone in the background when I sign in", nil)
+	autoStart.SetChecked(s.cfg.Settings.AutoStart || autostart.IsEnabled())
 
 	d := dialog.NewForm("Settings", "Save", "Cancel", []*widget.FormItem{
 		widget.NewFormItem("Rclone path", rclonePath),
 		widget.NewFormItem("Log retention days", retention),
+		widget.NewFormItem("Autostart", autoStart),
 	}, func(save bool) {
 		if !save {
 			return
@@ -365,6 +376,16 @@ func (s *state) showSettingsDialog() {
 			days = 30
 		}
 		s.cfg.Settings.LogRetentionDays = days
+		if autoStart.Checked {
+			if err := autostart.Enable(); err != nil {
+				dialog.ShowError(err, s.window)
+				return
+			}
+		} else if err := autostart.Disable(); err != nil {
+			dialog.ShowError(err, s.window)
+			return
+		}
+		s.cfg.Settings.AutoStart = autoStart.Checked
 		s.runner.Settings = s.cfg.Settings
 		s.saveAndRefresh()
 	}, s.window)
@@ -410,18 +431,67 @@ func newID() string {
 	return fmt.Sprintf("job-%d", time.Now().UnixNano())
 }
 
-func safeName(value string) string {
-	value = strings.ToLower(strings.TrimSpace(value))
-	var b strings.Builder
-	for _, r := range value {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
-			b.WriteRune(r)
-		} else if r == ' ' {
-			b.WriteRune('-')
-		}
+func scheduleStatus(job config.SyncJob) string {
+	if !job.Schedule.Enabled {
+		return "Off"
 	}
-	if b.Len() == 0 {
-		return "job"
+	return fmt.Sprintf("every %d day(s) at %02d:%02d", normalizedDays(job.Schedule.EveryNDays), normalizedHour(job.Schedule.AtHour), normalizedMinute(job.Schedule.AtMinute))
+}
+
+func scheduleOptions() []string {
+	return []string{"Every day", "Every 2 days", "Every 3 days", "Every 7 days", "Every 14 days", "Every 30 days"}
+}
+
+func scheduleLabel(days int) string {
+	switch normalizedDays(days) {
+	case 2:
+		return "Every 2 days"
+	case 3:
+		return "Every 3 days"
+	case 7:
+		return "Every 7 days"
+	case 14:
+		return "Every 14 days"
+	case 30:
+		return "Every 30 days"
+	default:
+		return "Every day"
 	}
-	return b.String()
+}
+
+func scheduleDays(label string) int {
+	var days int
+	if _, err := fmt.Sscanf(label, "Every %d days", &days); err == nil && days > 0 {
+		return days
+	}
+	return 1
+}
+
+func numberOptions(min, max int) []string {
+	var values []string
+	for i := min; i <= max; i++ {
+		values = append(values, fmt.Sprintf("%02d", i))
+	}
+	return values
+}
+
+func normalizedDays(days int) int {
+	if days <= 0 {
+		return 1
+	}
+	return days
+}
+
+func normalizedHour(hour int) int {
+	if hour < 0 || hour > 23 {
+		return 2
+	}
+	return hour
+}
+
+func normalizedMinute(minute int) int {
+	if minute < 0 || minute > 59 {
+		return 0
+	}
+	return minute
 }

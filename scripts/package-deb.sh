@@ -22,7 +22,7 @@ Architecture: amd64
 Maintainer: Nextclone maintainers
 Depends: libc6, libgl1, libx11-6, libxcursor1, libxrandr2, libxinerama1, libxi6, libxxf86vm1, libxkbcommon0
 Description: GUI for local-to-Nextcloud copy and sync jobs using rclone
- Nextclone provides a simple desktop dashboard for manually starting
+ Nextclone provides a simple desktop dashboard for manual and scheduled
  independent local-to-Nextcloud jobs powered by a bundled rclone binary.
 EOF
 

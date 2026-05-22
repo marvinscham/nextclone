@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Nextclone
-Comment=Manual local-to-Nextcloud sync jobs powered by rclone
+Comment=Local-to-Nextcloud sync jobs powered by rclone
 Exec=nextclone
 Terminal=false
 Categories=Utility;FileTransfer;

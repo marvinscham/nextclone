@@ -21,21 +21,31 @@ type Settings struct {
 	RclonePath       string `json:"rclonePath"`
 	LogRetentionDays int    `json:"logRetentionDays"`
 	Theme            string `json:"theme"`
+	AutoStart        bool   `json:"autoStart"`
 }
 
 type SyncJob struct {
-	ID             string     `json:"id"`
-	Name           string     `json:"name"`
-	LocalPath      string     `json:"localPath"`
-	RemoteName     string     `json:"remoteName"`
-	RemotePath     string     `json:"remotePath"`
-	Mode           string     `json:"mode"`
-	DryRun         bool       `json:"dryRun"`
-	Excludes       []string   `json:"excludes"`
-	ExtraFlags     string     `json:"extraFlags"`
-	LastRun        *RunResult `json:"lastRun,omitempty"`
-	CreatedAt      time.Time  `json:"createdAt"`
-	UpdatedAt      time.Time  `json:"updatedAt"`
+	ID               string     `json:"id"`
+	Name             string     `json:"name"`
+	LocalPath        string     `json:"localPath"`
+	RemoteName       string     `json:"remoteName"`
+	RemotePath       string     `json:"remotePath"`
+	Mode             string     `json:"mode"`
+	DryRun           bool       `json:"dryRun"`
+	Excludes         []string   `json:"excludes"`
+	ExtraFlags       string     `json:"extraFlags"`
+	Schedule         Schedule   `json:"schedule"`
+	LastScheduledRun *time.Time `json:"lastScheduledRun,omitempty"`
+	LastRun          *RunResult `json:"lastRun,omitempty"`
+	CreatedAt        time.Time  `json:"createdAt"`
+	UpdatedAt        time.Time  `json:"updatedAt"`
+}
+
+type Schedule struct {
+	Enabled    bool `json:"enabled"`
+	EveryNDays int  `json:"everyNDays"`
+	AtHour     int  `json:"atHour"`
+	AtMinute   int  `json:"atMinute"`
 }
 
 type RunResult struct {
@@ -72,7 +82,22 @@ func Load() (*Config, error) {
 	if cfg.Settings.LogRetentionDays == 0 {
 		cfg.Settings.LogRetentionDays = 30
 	}
+	Normalize(cfg)
 	return cfg, nil
+}
+
+func Normalize(cfg *Config) {
+	for i := range cfg.Jobs {
+		if cfg.Jobs[i].Schedule.EveryNDays <= 0 {
+			cfg.Jobs[i].Schedule.EveryNDays = 1
+		}
+		if cfg.Jobs[i].Schedule.AtHour < 0 || cfg.Jobs[i].Schedule.AtHour > 23 {
+			cfg.Jobs[i].Schedule.AtHour = 2
+		}
+		if cfg.Jobs[i].Schedule.AtMinute < 0 || cfg.Jobs[i].Schedule.AtMinute > 59 {
+			cfg.Jobs[i].Schedule.AtMinute = 0
+		}
+	}
 }
 
 func Save(cfg *Config) error {
@@ -80,6 +105,7 @@ func Save(cfg *Config) error {
 	if err != nil {
 		return err
 	}
+	Normalize(cfg)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
