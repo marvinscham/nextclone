@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -61,7 +62,8 @@ jobs:
       - name: Build Nextclone
         run: |
           mkdir -p dist rclone-linux
-          go build -trimpath -ldflags "-s -w" -o dist/nextclone-linux-amd64 ./cmd/nextclone
+          version="$(tr -d '[:space:]' < VERSION)"
+          go build -trimpath -ldflags "-s -w -X github.com/marvinscham/nextclone/internal/version.Version=${version}" -o dist/nextclone-linux-amd64 ./cmd/nextclone
 
       - name: Bundle rclone
         run: |
@@ -106,7 +108,8 @@ jobs:
           $env:Path = "C:\msys64\mingw64\bin;$env:Path"
           $env:CGO_ENABLED = "1"
           $env:CC = "gcc"
-          go build -trimpath -ldflags "-s -w -H windowsgui" -o dist/nextclone-windows-amd64.exe ./cmd/nextclone
+          $version = (Get-Content VERSION -Raw).Trim()
+          go build -trimpath -ldflags "-s -w -X github.com/marvinscham/nextclone/internal/version.Version=$version -H windowsgui" -o dist/nextclone-windows-amd64.exe ./cmd/nextclone
 
       - name: Bundle rclone
         shell: pwsh
