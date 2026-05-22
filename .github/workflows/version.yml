@@ -85,3 +85,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run release.yml --ref "v${{ steps.semver.outputs.version }}"
+
+      - name: Merge version bump back to develop
+        if: steps.semver.outputs.skip == 'false'
+        run: |
+          version="${{ steps.semver.outputs.version }}"
+          git fetch origin develop
+          git switch -C develop origin/develop
+          git merge --no-edit "v${version}"
+          git push origin develop
