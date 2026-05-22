@@ -315,6 +315,23 @@ func (s *state) showRemoteDialog() {
 	remoteName.SetText("nextcloud")
 	server := widget.NewEntry()
 	server.SetPlaceHolder("https://cloud.example.com")
+	appPassword := widget.NewButton("Create app password", func() {
+		appURL := nextcloudAppPasswordURL(server.Text)
+		if appURL == nil {
+			return
+		}
+		if err := s.app.OpenURL(appURL); err != nil {
+			dialog.ShowError(err, s.window)
+		}
+	})
+	appPassword.Disable()
+	server.OnChanged = func(_ string) {
+		if nextcloudAppPasswordURL(server.Text) == nil {
+			appPassword.Disable()
+			return
+		}
+		appPassword.Enable()
+	}
 	username := widget.NewEntry()
 	password := widget.NewPasswordEntry()
 	info := widget.NewLabel("Use a Nextcloud app password. It will be stored by rclone, not in Nextclone's settings file.")
@@ -322,6 +339,7 @@ func (s *state) showRemoteDialog() {
 	d := dialog.NewForm("Remote Setup", "Create remote", "Cancel", []*widget.FormItem{
 		widget.NewFormItem("Remote name", remoteName),
 		widget.NewFormItem("Server URL", server),
+		widget.NewFormItem("", appPassword),
 		widget.NewFormItem("Username", username),
 		widget.NewFormItem("App password", password),
 		widget.NewFormItem("Note", info),
@@ -426,6 +444,24 @@ func splitLines(value string) []string {
 func nextcloudWebDAVURL(server, username string) string {
 	server = strings.TrimRight(strings.TrimSpace(server), "/")
 	return server + "/remote.php/dav/files/" + url.PathEscape(username) + "/"
+}
+
+func nextcloudAppPasswordURL(server string) *url.URL {
+	server = strings.TrimRight(strings.TrimSpace(server), "/")
+	if server == "" {
+		return nil
+	}
+	instanceURL, err := url.Parse(server)
+	if err != nil || instanceURL.Scheme == "" || instanceURL.Host == "" {
+		return nil
+	}
+	if instanceURL.Scheme != "http" && instanceURL.Scheme != "https" {
+		return nil
+	}
+	instanceURL.Path = strings.TrimRight(instanceURL.Path, "/") + "/settings/user/security"
+	instanceURL.RawQuery = ""
+	instanceURL.Fragment = ""
+	return instanceURL
 }
 
 func newID() string {
