@@ -68,9 +68,10 @@ func (s *state) dashboard() fyne.CanvasObject {
 	add := widget.NewButtonWithIcon("Add Sync", theme.ContentAddIcon(), func() { s.showJobDialog(nil) })
 	remote := widget.NewButton("Remote Setup", s.showRemoteDialog)
 	settings := widget.NewButton("Settings", s.showSettingsDialog)
+	configFile := widget.NewButton("Config File", s.revealConfigFile)
 	check := widget.NewButton("Check rclone", s.checkRclone)
 
-	header := container.NewBorder(nil, nil, container.NewVBox(title), container.NewHBox(add, remote, settings, check))
+	header := container.NewBorder(nil, nil, container.NewVBox(title), container.NewHBox(add, remote, settings, configFile, check))
 	s.refreshJobs()
 	return container.NewBorder(header, nil, nil, nil, container.NewVScroll(s.jobsBox))
 }
@@ -420,6 +421,21 @@ func (s *state) checkRclone() {
 		}
 		dialog.ShowInformation("rclone found", version, s.window)
 	}()
+}
+
+func (s *state) revealConfigFile() {
+	if err := config.Save(s.cfg); err != nil {
+		dialog.ShowError(err, s.window)
+		return
+	}
+	path, err := config.ConfigPath()
+	if err != nil {
+		dialog.ShowError(err, s.window)
+		return
+	}
+	if err := revealFile(path); err != nil {
+		dialog.ShowError(err, s.window)
+	}
 }
 
 func (s *state) saveAndRefresh() {
