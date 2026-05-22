@@ -29,6 +29,7 @@ Type=Application
 Name=Nextclone
 Comment=Run scheduled Nextclone backups in the background
 Exec=%s --background
+Icon=nextclone
 Terminal=false
 X-GNOME-Autostart-enabled=true
 `, quoteDesktopArg(exe))

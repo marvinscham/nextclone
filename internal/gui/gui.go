@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/marvinscham/nextclone/assets"
 	"github.com/marvinscham/nextclone/internal/autostart"
 	"github.com/marvinscham/nextclone/internal/config"
 	"github.com/marvinscham/nextclone/internal/jobs"
@@ -34,6 +35,7 @@ type state struct {
 
 func Run() {
 	a := app.NewWithID("com.nextclone.app")
+	a.SetIcon(assets.AppIcon)
 	w := a.NewWindow(config.AppName)
 	w.Resize(fyne.NewSize(900, 620))
 
@@ -63,13 +65,12 @@ func Run() {
 
 func (s *state) dashboard() fyne.CanvasObject {
 	title := widget.NewLabelWithStyle("Nextclone", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
-	subtitle := widget.NewLabel("Manual local-to-Nextcloud copy and sync jobs powered by rclone.")
 	add := widget.NewButtonWithIcon("Add Sync", theme.ContentAddIcon(), func() { s.showJobDialog(nil) })
-	remote := widget.NewButton("Nextcloud Setup", s.showRemoteDialog)
+	remote := widget.NewButton("Remote Setup", s.showRemoteDialog)
 	settings := widget.NewButton("Settings", s.showSettingsDialog)
 	check := widget.NewButton("Check rclone", s.checkRclone)
 
-	header := container.NewBorder(nil, nil, container.NewVBox(title, subtitle), container.NewHBox(add, remote, settings, check))
+	header := container.NewBorder(nil, nil, container.NewVBox(title), container.NewHBox(add, remote, settings, check))
 	s.refreshJobs()
 	return container.NewBorder(header, nil, nil, nil, container.NewVScroll(s.jobsBox))
 }
@@ -318,7 +319,7 @@ func (s *state) showRemoteDialog() {
 	password := widget.NewPasswordEntry()
 	info := widget.NewLabel("Use a Nextcloud app password. It will be stored by rclone, not in Nextclone's settings file.")
 
-	d := dialog.NewForm("Nextcloud Setup", "Create remote", "Cancel", []*widget.FormItem{
+	d := dialog.NewForm("Remote Setup", "Create remote", "Cancel", []*widget.FormItem{
 		widget.NewFormItem("Remote name", remoteName),
 		widget.NewFormItem("Server URL", server),
 		widget.NewFormItem("Username", username),

@@ -1,6 +1,10 @@
-# Nextclone
-
-Nextclone is a Go/Fyne desktop app for independent local-to-Nextcloud copy or sync jobs using `rclone`.
+<p align="center" style="margin-bottom: 0px !important;">
+  <img src="./assets/sync_512.png" width="120" align="center">
+</p>
+<h1 align="center">Nextclone</h1>
+<p align="center" style="margin-bottom: 0px !important;">
+  Nextclone is a Go/Fyne desktop app for independent local-to-Nextcloud copy or sync jobs using `rclone`.
+</p>
 
 ## Current scope
 
@@ -73,3 +77,7 @@ git push origin v0.1.0
 ```
 
 The GitHub Actions pipeline builds tagged Linux and Windows artifacts, creates a Debian package, and publishes a GitHub Release.
+
+## Icon credit
+
+[Sync icons created by Freepik - Flaticon](https://www.flaticon.com/free-icons/sync)

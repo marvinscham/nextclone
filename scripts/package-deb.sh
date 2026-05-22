@@ -4,14 +4,21 @@ set -eu
 version="${1:?version is required}"
 
 mkdir -p package/DEBIAN package/usr/lib/nextclone package/usr/bin package/usr/share/applications
+for size in 16 24 32 48 64 128 256 512; do
+	mkdir -p "package/usr/share/icons/hicolor/${size}x${size}/apps"
+done
 
 cp dist/nextclone-linux-amd64 package/usr/lib/nextclone/nextclone
 cp dist/rclone-linux-amd64 package/usr/lib/nextclone/rclone
 cp packaging/linux/nextclone package/usr/bin/nextclone
 cp packaging/linux/nextclone.desktop package/usr/share/applications/nextclone.desktop
+for size in 16 24 32 48 64 128 256 512; do
+	cp "assets/sync_${size}.png" "package/usr/share/icons/hicolor/${size}x${size}/apps/nextclone.png"
+done
 
 chmod 0755 package/usr/lib/nextclone/nextclone package/usr/lib/nextclone/rclone package/usr/bin/nextclone
 chmod 0644 package/usr/share/applications/nextclone.desktop
+find package/usr/share/icons/hicolor -type f -name nextclone.png -exec chmod 0644 {} +
 
 cat > package/DEBIAN/control <<EOF
 Package: nextclone

@@ -3,5 +3,6 @@ Type=Application
 Name=Nextclone
 Comment=Local-to-Nextcloud sync jobs powered by rclone
 Exec=nextclone
+Icon=nextclone
 Terminal=false
 Categories=Utility;FileTransfer;
