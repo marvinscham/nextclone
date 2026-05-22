@@ -23,6 +23,7 @@ type Settings struct {
 	Theme            string `json:"theme"`
 	AutoStart        bool   `json:"autoStart"`
 	Language         string `json:"language"`
+	UploadLimit      string `json:"uploadLimit"`
 }
 
 type SyncJob struct {

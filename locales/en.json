@@ -57,6 +57,7 @@
   "settings.rclonePath": "Rclone path",
   "settings.startInBackground": "Start Nextclone in the background when I sign in",
   "settings.title": "Settings",
+  "settings.uploadLimit": "Upload speed limit",
   "sync.advancedFlags": "Advanced rclone flags, optional",
   "sync.at": "At",
   "sync.browse": "Browse",
@@ -81,5 +82,6 @@
   "sync.runAutomatically": "Run automatically",
   "sync.schedule": "Schedule",
   "sync.selectRemote": "Select remote",
-  "sync.title": "Sync Job"
+  "sync.title": "Sync Job",
+  "uploadLimit.unlimited": "Unlimited"
 }

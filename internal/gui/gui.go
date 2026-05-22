@@ -437,12 +437,15 @@ func (s *state) showSettingsDialog() {
 	rclonePath.SetText(s.cfg.Settings.RclonePath)
 	retention := widget.NewEntry()
 	retention.SetText(fmt.Sprintf("%d", s.cfg.Settings.LogRetentionDays))
+	uploadLimit := widget.NewSelect(s.uploadLimitOptions(), nil)
+	uploadLimit.SetSelected(s.uploadLimitLabel(s.cfg.Settings.UploadLimit))
 	autoStart := widget.NewCheck(s.t("settings.startInBackground"), nil)
 	autoStart.SetChecked(s.cfg.Settings.AutoStart || autostart.IsEnabled())
 
 	d := dialog.NewForm(s.t("settings.title"), s.t("common.save"), s.t("common.cancel"), []*widget.FormItem{
 		widget.NewFormItem(s.t("settings.rclonePath"), rclonePath),
 		widget.NewFormItem(s.t("settings.logRetentionDays"), retention),
+		widget.NewFormItem(s.t("settings.uploadLimit"), uploadLimit),
 		widget.NewFormItem(s.t("settings.autostart"), autoStart),
 	}, func(save bool) {
 		if !save {
@@ -455,6 +458,7 @@ func (s *state) showSettingsDialog() {
 			days = 30
 		}
 		s.cfg.Settings.LogRetentionDays = days
+		s.cfg.Settings.UploadLimit = s.uploadLimitValue(uploadLimit.Selected)
 		if autoStart.Checked {
 			if err := autostart.Enable(); err != nil {
 				dialog.ShowError(err, s.window)
@@ -578,6 +582,66 @@ func (s *state) scheduleDays(label string) int {
 		}
 	}
 	return 1
+}
+
+func (s *state) uploadLimitOptions() []string {
+	return []string{
+		s.t("uploadLimit.unlimited"),
+		"512 KiB/s",
+		"1 MiB/s",
+		"2 MiB/s",
+		"5 MiB/s",
+		"10 MiB/s",
+		"25 MiB/s",
+		"50 MiB/s",
+		"100 MiB/s",
+	}
+}
+
+func (s *state) uploadLimitLabel(value string) string {
+	switch strings.TrimSpace(value) {
+	case "512K":
+		return "512 KiB/s"
+	case "1M":
+		return "1 MiB/s"
+	case "2M":
+		return "2 MiB/s"
+	case "5M":
+		return "5 MiB/s"
+	case "10M":
+		return "10 MiB/s"
+	case "25M":
+		return "25 MiB/s"
+	case "50M":
+		return "50 MiB/s"
+	case "100M":
+		return "100 MiB/s"
+	default:
+		return s.t("uploadLimit.unlimited")
+	}
+}
+
+func (s *state) uploadLimitValue(label string) string {
+	switch label {
+	case "512 KiB/s":
+		return "512K"
+	case "1 MiB/s":
+		return "1M"
+	case "2 MiB/s":
+		return "2M"
+	case "5 MiB/s":
+		return "5M"
+	case "10 MiB/s":
+		return "10M"
+	case "25 MiB/s":
+		return "25M"
+	case "50 MiB/s":
+		return "50M"
+	case "100 MiB/s":
+		return "100M"
+	default:
+		return ""
+	}
 }
 
 func numberOptions(min, max int) []string {

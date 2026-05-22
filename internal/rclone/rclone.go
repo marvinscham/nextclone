@@ -150,7 +150,21 @@ func (r Runner) RunJob(ctx context.Context, job config.SyncJob, logPath string) 
 		if mode != "sync" {
 			mode = "copy"
 		}
-		args := []string{mode, job.LocalPath, job.RemoteName + ":" + strings.TrimPrefix(job.RemotePath, "/"), "--progress", "--stats", "2s"}
+		args := []string{
+			mode,
+			job.LocalPath,
+			job.RemoteName + ":" + strings.TrimPrefix(job.RemotePath, "/"),
+			"--progress",
+			"--stats", "2s",
+			"--transfers", "4",
+			"--checkers", "8",
+			"--retries", "3",
+			"--low-level-retries", "10",
+			"--create-empty-src-dirs",
+		}
+		if strings.TrimSpace(r.Settings.UploadLimit) != "" {
+			args = append(args, "--bwlimit", strings.TrimSpace(r.Settings.UploadLimit))
+		}
 		if job.DryRun {
 			args = append(args, "--dry-run")
 		}
