@@ -22,6 +22,7 @@ type Settings struct {
 	LogRetentionDays int    `json:"logRetentionDays"`
 	Theme            string `json:"theme"`
 	AutoStart        bool   `json:"autoStart"`
+	Language         string `json:"language"`
 }
 
 type SyncJob struct {
@@ -58,7 +59,7 @@ type RunResult struct {
 }
 
 func Default() *Config {
-	return &Config{Settings: Settings{LogRetentionDays: 30, Theme: "system"}}
+	return &Config{Settings: Settings{LogRetentionDays: 30, Theme: "system", Language: "system"}}
 }
 
 func Load() (*Config, error) {
@@ -81,6 +82,9 @@ func Load() (*Config, error) {
 	}
 	if cfg.Settings.LogRetentionDays == 0 {
 		cfg.Settings.LogRetentionDays = 30
+	}
+	if cfg.Settings.Language == "" {
+		cfg.Settings.Language = "system"
 	}
 	Normalize(cfg)
 	return cfg, nil
