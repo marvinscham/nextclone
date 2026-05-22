@@ -20,6 +20,7 @@ import (
 	"github.com/marvinscham/nextclone/internal/i18n"
 	"github.com/marvinscham/nextclone/internal/jobs"
 	"github.com/marvinscham/nextclone/internal/rclone"
+	"github.com/marvinscham/nextclone/internal/version"
 )
 
 type state struct {
@@ -38,7 +39,7 @@ type state struct {
 func Run() {
 	a := app.NewWithID("com.nextclone.app")
 	a.SetIcon(assets.AppIcon)
-	w := a.NewWindow(config.AppName)
+	w := a.NewWindow(version.Title(config.AppName))
 	w.Resize(fyne.NewSize(900, 620))
 
 	cfg, err := config.Load()
@@ -67,7 +68,7 @@ func Run() {
 }
 
 func (s *state) dashboard() fyne.CanvasObject {
-	title := widget.NewLabelWithStyle(s.t("app.title"), fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+	title := widget.NewLabelWithStyle(version.Title(s.t("app.title")), fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 	add := widget.NewButtonWithIcon(s.t("dashboard.addSync"), theme.ContentAddIcon(), func() { s.showJobDialog(nil) })
 	remote := widget.NewButton(s.t("dashboard.remoteSetup"), s.showRemoteDialog)
 	settings := widget.NewButton(s.t("dashboard.settings"), s.showSettingsDialog)

@@ -11,8 +11,11 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
         libxkbcommon-dev \
         make \
         mingw-w64 \
+        nodejs \
+        npm \
         pkg-config \
         unzip \
         xorg-dev \
         zip \
-    && rm -rf /var/lib/apt/lists/*
+    && npm install -g @commitlint/cli @commitlint/config-conventional \
+    && rm -rf /var/lib/apt/lists/* /root/.npm
