@@ -20,7 +20,7 @@
   "job.delete.title": "Delete sync job",
   "job.duplicateSuffix": " copy",
   "job.lastRun": "Last %s at %s",
-  "job.meta": "Mode: %s | Schedule: %s | Status: %s",
+  "job.meta": "Mode: %s\nSchedule: %s\nLast run: %s",
   "job.mode.copy": "Copy",
   "job.mode.sync": "Sync (destination may be deleted to match source)",
   "job.status.failed": "failed",

@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -159,7 +160,8 @@ func (s *state) refreshJobs() {
 		duplicate := widget.NewButton(s.t("job.action.duplicate"), func() { s.duplicateJob(idx) })
 		deleteBtn := widget.NewButtonWithIcon(s.t("job.action.delete"), theme.DeleteIcon(), func() { s.deleteJob(idx) })
 
-		card := widget.NewCard("", "", container.NewBorder(nil, nil, container.NewVBox(name, detail, meta), container.NewHBox(start, stop, edit, logs, duplicate, deleteBtn)))
+		details := container.New(layout.NewCustomPaddedVBoxLayout(2), name, detail, meta)
+		card := widget.NewCard("", "", container.NewBorder(nil, nil, details, container.NewHBox(start, stop, edit, logs, duplicate, deleteBtn)))
 		s.jobsBox.Add(card)
 	}
 	s.jobsBox.Refresh()
