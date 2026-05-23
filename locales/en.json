@@ -83,5 +83,16 @@
   "sync.schedule": "Schedule",
   "sync.selectRemote": "Select remote",
   "sync.title": "Sync Job",
+  "update.available": "Update %s",
+  "update.available.message": "%s is available. Install it now?",
+  "update.available.title": "Update available",
+  "update.check": "Check update",
+  "update.checking": "Checking...",
+  "update.current.message": "You are already running the latest version.",
+  "update.current.title": "No update available",
+  "update.install": "Install update",
+  "update.installed.message": "The update was installed. Restart Nextclone to use the new version.",
+  "update.installed.title": "Update installed",
+  "update.installing": "Installing...",
   "uploadLimit.unlimited": "Unlimited"
 }
