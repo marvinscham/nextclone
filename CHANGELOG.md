@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.2.0
+
+### Feature
+
+- [added self-update](https://github.com/marvinscham/nextclone/commit/ddef76ea4a1fb617465c661e468d1299d8e2588f)
+
+### Documentation
+
+- [add changelog with auto-generation](https://github.com/marvinscham/nextclone/commit/66062f8cf506eee32d7d40e46316566cf77d7fcf)
+- [add en/de setup instructions, move dev info](https://github.com/marvinscham/nextclone/commit/edc15a5ed49710677547be60aa2c6bffc8723bf8)
+
 ## v0.1.1
 
 ### Fix
