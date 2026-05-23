@@ -75,7 +75,8 @@ jobs:
         if: steps.semver.outputs.skip == 'false'
         run: |
           version="${{ steps.semver.outputs.version }}"
-          git add VERSION
+          scripts/generate-changelog.sh --version "v${version}"
+          git add VERSION CHANGELOG.md
           git commit -m "chore(release): v${version}"
           git tag "v${version}"
           git push origin HEAD:main "v${version}"
