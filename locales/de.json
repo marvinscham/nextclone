@@ -20,7 +20,7 @@
   "job.delete.title": "Sync-Job löschen",
   "job.duplicateSuffix": " Kopie",
   "job.lastRun": "Zuletzt %s um %s",
-  "job.meta": "Modus: %s | Zeitplan: %s | Status: %s",
+  "job.meta": "Modus: %s\nZeitplan: %s\nLetzter Lauf: %s",
   "job.mode.copy": "Kopieren",
   "job.mode.sync": "Synchronisieren (Ziel kann gelöscht werden, um der Quelle zu entsprechen)",
   "job.status.failed": "fehlgeschlagen",
