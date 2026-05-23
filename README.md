@@ -3,80 +3,95 @@
 </p>
 <h1 align="center">Nextclone</h1>
 <p align="center" style="margin-bottom: 0px !important;">
-  Nextclone is a Go/Fyne desktop app for independent local-to-Nextcloud copy or sync jobs using `rclone`.
+  A simple desktop app for backing up local folders to Nextcloud.
 </p>
 
-## Current scope
+<p align="center">
+  English | <a href="README.de.md">Deutsch</a>
+</p>
 
-- GUI dashboard for multiple jobs
-- Local-to-Nextcloud only
-- `copy` mode for safer uploads
-- `sync` mode for mirroring local folders to Nextcloud
-- Per-job schedules using simple "every N days at HH:MM" presets
-- Optional system sign-in autostart for background scheduled backups
-- Per-job logs
-- Persistent JSON settings in the user config directory
-- Nextcloud WebDAV remote setup through bundled or installed `rclone`
-- GitHub Actions tag release pipeline with Linux, Windows, and `.deb` artifacts
+## What Nextclone Does
+
+- Copies or syncs folders from your computer to Nextcloud.
+- Lets you create multiple backup jobs.
+- Can run jobs manually or on a schedule.
+- Can start in the background when you sign in.
+- Shows logs for each job.
+- Includes rclone in the release downloads, so you usually do not need to install it separately.
+
+## Installation
+
+You do not need to download the source code or use GitHub tools. Use the prepared download for your operating system.
+
+1. Open the [latest Nextclone release](https://github.com/marvinscham/nextclone/releases/latest).
+2. Scroll to the "Assets" section.
+3. Download the file for your operating system.
+
+### Windows
+
+1. Download `nextclone_v..._windows_amd64.zip`.
+2. Open the downloaded zip file.
+3. Extract it to a folder, for example your Desktop or Documents folder.
+4. Double-click `nextclone-windows-amd64.exe` to start Nextclone.
+
+If Windows shows a warning because the app is new or unsigned, choose "More info" and then "Run anyway" only if you downloaded it from the official Nextclone release page.
+
+### Linux
+
+For Debian, Ubuntu, Linux Mint, and similar distributions:
+
+1. Download `nextclone_v..._linux_amd64.deb`.
+2. Open the downloaded file with your software installer.
+3. Click Install.
+4. Start Nextclone from your app launcher.
+
+If your Linux distribution does not support `.deb` files, download `nextclone_v..._linux_amd64.zip`, extract it, and run the `nextclone-linux-amd64` file.
+
+## First Setup
+
+Before creating a sync job, connect Nextclone to your Nextcloud account.
+
+1. Open Nextclone.
+2. Click "Remote Setup".
+3. Enter your Nextcloud server address, for example `https://cloud.example.com`.
+4. Enter your Nextcloud username.
+5. Click "Create app password" if you need a Nextcloud app password.
+6. Paste the app password into Nextclone.
+7. Click "Create remote".
+
+An app password is safer than using your normal Nextcloud password. You can remove it later from your Nextcloud security settings if needed.
+
+## Creating A Backup Job
+
+1. Click "Add Sync".
+2. Choose a name for the job, for example "Documents backup".
+3. Pick the local folder you want to upload.
+4. Enter the remote name you created during setup, usually `nextcloud`.
+5. Enter the Nextcloud destination folder, for example `/Backups/Documents`.
+6. Choose the mode.
+7. Save the job.
+8. Click "Start" to run it.
+
+### Copy Or Sync
+
+- `copy` uploads new and changed files, but does not delete files from Nextcloud. This is the safer choice for most people.
+- `sync` makes the Nextcloud folder match your local folder. Files deleted locally can also be deleted from Nextcloud.
+
+Use `copy` unless you specifically want exact mirroring.
+
+## Automatic Backups
+
+When creating or editing a job, enable "Run automatically" and choose how often it should run.
+
+To let scheduled backups run after you sign in, open "Settings" and enable "Start Nextclone in the background when I sign in".
+
+## Updates
+
+Nextclone checks for new versions when it starts. If an update is available, the update button in the top menu turns green. Click it to inst
 
 ## Development
 
-Install Go and the Fyne system dependencies for your OS, then run:
-
-```bash
-make run
-```
-
-Run tests:
-
-```bash
-make test
-```
-
-Build executables:
-
-```bash
-make build-all
-```
-
-This writes Linux and Windows executables to `dist/`.
-
-The repository includes a root-user devcontainer with the Linux GUI dependencies needed for Fyne development. On Linux hosts, allow X11 access before running the GUI from the container if needed, for example `xhost +local:root`.
-
-## Background scheduling
-
-Each sync job can be set to run automatically every 1, 2, 3, 7, 14, or 30 days at a selected local time. If the computer or background app was not running at the selected time, Nextclone runs the missed backup the next time the background scheduler checks after that time.
-
-The Settings dialog can install or remove system sign-in autostart. Autostart launches Nextclone with `--background`, which runs scheduled backups without opening the app window.
-
-Headless modes are also available directly:
-
-```bash
-nextclone --background
-nextclone --run-due
-```
-
-## rclone
-
-Nextclone looks for rclone in this order:
-
-1. The configured rclone path in Settings
-2. `NEXTCLONE_RCLONE_PATH`
-3. A bundled `rclone` next to the executable
-4. `rclone` on `PATH`
-
-Release packages bundle rclone where possible.
-
-## Release
-
-Merges to `main` are versioned automatically from Conventional Commit messages since the latest `v*` tag:
-
-- `feat:` bumps the minor version
-- `fix:`, `perf:`, and `revert:` bump the patch version
-- `!` in the commit header or `BREAKING CHANGE:` in the body bumps the major version
-
-The version workflow updates `VERSION`, commits `chore(release): v{new_version}`, and tags that bump commit as `v{new_version}`. The tag release pipeline builds Linux and Windows artifacts, creates a Debian package, and publishes a GitHub Release.
-
+Developer setup, build, scheduling, rclone, and release details are documented in [DEVELOPMENT.md](DEVELOPMENT.md).
 ## Icon credit
 
 [Sync icons created by Freepik - Flaticon](https://www.flaticon.com/free-icons/sync)

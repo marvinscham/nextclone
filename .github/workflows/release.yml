@@ -131,6 +131,19 @@ jobs:
       - build-linux
       - build-windows
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes
+        run: |
+          version="${GITHUB_REF_NAME}"
+          if [[ "$version" != v* ]]; then
+            version="v$(tr -d '[:space:]' < VERSION)"
+          fi
+          scripts/generate-changelog.sh --version "$version" --section-only --output release-notes.md
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -141,5 +154,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: Nextclone ${{ github.ref_name }}
-          body: Automated Nextclone release for ${{ github.ref_name }}. Includes bundled rclone builds for Linux and Windows.
+          body_path: release-notes.md
           files: release-assets/*

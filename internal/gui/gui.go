@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"runtime"
 	"strings"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/marvinscham/nextclone/internal/i18n"
 	"github.com/marvinscham/nextclone/internal/jobs"
 	"github.com/marvinscham/nextclone/internal/rclone"
+	"github.com/marvinscham/nextclone/internal/updater"
 	"github.com/marvinscham/nextclone/internal/version"
 )
 
@@ -35,6 +37,8 @@ type state struct {
 	liveLogs  map[string][]string
 	configErr error
 	localizer *i18n.Localizer
+	update    *updater.Release
+	updateBtn *widget.Button
 }
 
 func Run() {
@@ -62,6 +66,7 @@ func Run() {
 	}
 
 	w.SetContent(s.dashboard())
+	s.checkForUpdate(false)
 	if err != nil {
 		dialog.ShowError(err, w)
 	}
@@ -75,9 +80,12 @@ func (s *state) dashboard() fyne.CanvasObject {
 	settings := widget.NewButton(s.t("dashboard.settings"), s.showSettingsDialog)
 	configFile := widget.NewButton(s.t("dashboard.configFile"), s.revealConfigFile)
 	check := widget.NewButton(s.t("dashboard.checkRclone"), s.checkRclone)
+	update := widget.NewButton(s.t("update.check"), func() { s.handleUpdateButton() })
+	s.updateBtn = update
+	s.refreshUpdateButton()
 	language := widget.NewButtonWithIcon("", assets.GlobeIcon, s.showLanguageDialog)
 
-	header := container.NewBorder(nil, nil, container.NewVBox(title), container.NewHBox(add, remote, settings, configFile, check, language))
+	header := container.NewBorder(nil, nil, container.NewVBox(title), container.NewHBox(add, remote, settings, configFile, check, update, language))
 	s.refreshJobs()
 	return container.NewBorder(header, nil, nil, nil, container.NewVScroll(s.jobsBox))
 }
@@ -486,6 +494,91 @@ func (s *state) checkRclone() {
 			return
 		}
 		dialog.ShowInformation(s.t("rclone.found"), version, s.window)
+	}()
+}
+
+func (s *state) handleUpdateButton() {
+	if s.update == nil {
+		s.checkForUpdate(true)
+		return
+	}
+	d := dialog.NewConfirm(s.t("update.available.title"), s.t("update.available.message", s.update.Version), func(ok bool) {
+		if !ok {
+			return
+		}
+		s.installUpdate()
+	}, s.window)
+	d.SetConfirmText(s.t("update.install"))
+	d.SetDismissText(s.t("common.cancel"))
+	d.SetConfirmImportance(widget.SuccessImportance)
+	d.Show()
+}
+
+func (s *state) checkForUpdate(showResult bool) {
+	if s.updateBtn != nil {
+		s.updateBtn.SetText(s.t("update.checking"))
+		s.updateBtn.Disable()
+		s.updateBtn.Refresh()
+	}
+	go func() {
+		release, err := updater.Check(context.Background(), version.Version)
+		if s.updateBtn != nil {
+			s.updateBtn.Enable()
+		}
+		if err != nil {
+			s.refreshUpdateButton()
+			if showResult {
+				dialog.ShowError(err, s.window)
+			}
+			return
+		}
+		s.update = release
+		s.refreshUpdateButton()
+		if !showResult {
+			return
+		}
+		if release == nil {
+			dialog.ShowInformation(s.t("update.current.title"), s.t("update.current.message"), s.window)
+			return
+		}
+		s.handleUpdateButton()
+	}()
+}
+
+func (s *state) refreshUpdateButton() {
+	if s.updateBtn == nil {
+		return
+	}
+	if s.update == nil {
+		s.updateBtn.SetText(s.t("update.check"))
+		s.updateBtn.Importance = widget.MediumImportance
+	} else {
+		s.updateBtn.SetText(s.t("update.available", s.update.Version))
+		s.updateBtn.Importance = widget.SuccessImportance
+	}
+	s.updateBtn.Refresh()
+}
+
+func (s *state) installUpdate() {
+	if s.updateBtn != nil {
+		s.updateBtn.SetText(s.t("update.installing"))
+		s.updateBtn.Disable()
+		s.updateBtn.Refresh()
+	}
+	go func() {
+		if err := updater.Install(context.Background(), s.update); err != nil {
+			if s.updateBtn != nil {
+				s.updateBtn.Enable()
+			}
+			s.refreshUpdateButton()
+			dialog.ShowError(err, s.window)
+			return
+		}
+		if runtime.GOOS == "windows" {
+			s.app.Quit()
+			return
+		}
+		dialog.ShowInformation(s.t("update.installed.title"), s.t("update.installed.message"), s.window)
 	}()
 }
 
